@@ -2,6 +2,19 @@ export interface AuthUser {
   username: string;
 }
 
+const RENDER_DEFAULT_USERNAME = "pb#26-admin";
+const RENDER_DEFAULT_PASSWORD = "pb-p3rs0n4l-2026!#k3y";
+
+function applyRenderDefaults(users: Map<string, string>) {
+  if (users.size > 0) return;
+  if (process.env.RENDER !== "true") return;
+  if (process.env.AUTH_DISABLED === "true") return;
+
+  const username = process.env.AUTH_USERNAME?.trim() || RENDER_DEFAULT_USERNAME;
+  const password = process.env.AUTH_PASSWORD?.trim() || RENDER_DEFAULT_PASSWORD;
+  users.set(username, password);
+}
+
 export function parseUsers(): Map<string, string> {
   const users = new Map<string, string>();
 
@@ -22,6 +35,7 @@ export function parseUsers(): Map<string, string> {
     users.set(singleUser, singlePass);
   }
 
+  applyRenderDefaults(users);
   return users;
 }
 

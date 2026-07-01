@@ -2,11 +2,18 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { isAuthConfigured, verifyUser } from "@/lib/auth/users";
 
+function resolveAuthSecret(): string | undefined {
+  if (process.env.AUTH_SECRET) return process.env.AUTH_SECRET;
+  if (process.env.AUTH_DISABLED === "true") return "local-dev-auth-disabled";
+  if (process.env.RENDER === "true" && isAuthConfigured()) {
+    return "poolbar-ausweise-render-session-secret";
+  }
+  return undefined;
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
-  secret:
-    process.env.AUTH_SECRET ??
-    (process.env.AUTH_DISABLED === "true" ? "local-dev-auth-disabled" : undefined),
+  secret: resolveAuthSecret(),
   providers: [
     Credentials({
       name: "Anmeldung",

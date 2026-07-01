@@ -14,9 +14,3 @@ services:
     envVars:
       - key: AUTH_DISABLED
         value: "false"
-      - key: AUTH_SECRET
-        generateValue: true
-      - key: AUTH_USERNAME
-        value: "pb#26-admin"
-      - key: AUTH_PASSWORD
-        value: "pb-p3rs0n4l-2026!#k3y"
