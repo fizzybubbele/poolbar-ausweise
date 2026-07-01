@@ -11,7 +11,7 @@
     "vorname": { "textX": 99.5, "textBaselineY": 151.28, "fontSize": 9 },
     "nachname": { "textX": 99.5, "textBaselineY": 142.28, "fontSize": 9 },
     "bereich": { "textX": 99.5, "textBaselineY": 121.75, "fontSize": 6, "uppercase": true },
-    "rolle": { "textX": 99.5, "textBaselineY": 112.75, "fontSize": 6, "uppercase": true },
+    "rolle": { "textX": 99.5, "textBaselineY": 115.75, "fontSize": 6, "uppercase": true },
     "id_line": { "textX": 32.3, "textBaselineY": 65.67, "fontSize": 9 },
     "mhd": { "textX": 194.3, "textBaselineY": 65.67, "fontSize": 9 },
     "photo": {
