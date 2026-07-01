@@ -99,19 +99,25 @@ function wrapTextAtCommas(
   const lines: string[] = [];
   let current = "";
 
-  for (const segment of segments) {
+  for (let i = 0; i < segments.length; i++) {
+    const segment = segments[i];
     const candidate = current ? `${current}, ${segment}` : segment;
+
     if (font.widthOfTextAtSize(candidate, fontSize) <= maxWidth) {
       current = candidate;
       continue;
     }
 
-    if (current) lines.push(current);
+    if (current) lines.push(`${current},`);
+
     if (font.widthOfTextAtSize(segment, fontSize) <= maxWidth) {
       current = segment;
     } else {
-      lines.push(...wrapTextByWords(segment, font, fontSize, maxWidth));
-      current = "";
+      const wrapped = wrapTextByWords(segment, font, fontSize, maxWidth);
+      for (let j = 0; j < wrapped.length - 1; j++) {
+        lines.push(wrapped[j]);
+      }
+      current = wrapped[wrapped.length - 1] ?? "";
     }
   }
 
