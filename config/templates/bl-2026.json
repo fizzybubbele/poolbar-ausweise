@@ -1,0 +1,49 @@
+{
+  "id": "bl-2026",
+  "name": "Bereichsleitung 2026",
+  "pdfPageIndex": 1,
+  "rolePrefix": "BL",
+  "pageWidth": 285.78,
+  "pageHeight": 195.07,
+  "fontSize": 9,
+  "textColor": { "r": 0.086, "g": 0.094, "b": 0.408 },
+  "fields": {
+    "vorname": {
+      "textX": 99.5,
+      "textBaselineY": 151.27,
+      "cover": { "x": 98.5, "y": 150.27, "width": 62, "height": 14.8, "color": { "r": 0.565, "g": 0.741, "b": 0.333 } }
+    },
+    "nachname": {
+      "textX": 99.5,
+      "textBaselineY": 143.27,
+      "cover": { "x": 98.5, "y": 142.27, "width": 68, "height": 14.8, "color": { "r": 0.188, "g": 0.22, "b": 0.149 } }
+    },
+    "bereich": {
+      "textX": 99.5,
+      "textBaselineY": 120.47,
+      "cover": { "x": 98.5, "y": 119.47, "width": 58, "height": 14.8, "color": { "r": 0.557, "g": 0.737, "b": 0.337 } }
+    },
+    "rolle": {
+      "textX": 99.5,
+      "textBaselineY": 112.47,
+      "cover": { "x": 98.5, "y": 111.47, "width": 45, "height": 14.8, "color": { "r": 0.541, "g": 0.733, "b": 0.345 } }
+    },
+    "id_line": {
+      "textX": 32.3,
+      "textBaselineY": 65.67,
+      "cover": { "x": 31.3, "y": 64.67, "width": 52, "height": 14.8, "color": { "r": 0.114, "g": 0.118, "b": 0.114 } }
+    },
+    "mhd": {
+      "textX": 194.3,
+      "textBaselineY": 65.67,
+      "cover": { "x": 193.3, "y": 64.67, "width": 62, "height": 14.8, "color": { "r": 0.722, "g": 0.796, "b": 0.251 } }
+    },
+    "photo": {
+      "x": 32.34,
+      "y": 79.56,
+      "width": 61.96,
+      "height": 83.17,
+      "fit": "cover"
+    }
+  }
+}
