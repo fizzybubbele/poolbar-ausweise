@@ -52,27 +52,59 @@ npx tsx scripts/test-render.ts
 
 Erzeugt Beispiel-PDFs in `tmp-test/`.
 
-## Online deployen
+## Kostenlos online (ohne Vercel)
 
-### Vercel (schnellste Option)
+### Option A: Render.com (Free Tier, empfohlen)
 
-1. Auf [vercel.com](https://vercel.com) mit GitHub einloggen
-2. **Add New Project** → `fizzybubbele/poolbar-ausweise` importieren
-3. Region **Frankfurt (fra1)** ist in `vercel.json` voreingestellt
-4. **Deploy** — fertig
+Dauerhaft online, 0 €, deployt direkt aus GitHub.
 
-Empfohlen unter **Project → Settings → Deployment Protection** den **Passwortschutz** aktivieren (Personendaten).
+1. Auf [render.com](https://render.com) registrieren (GitHub verbinden)
+2. **New → Blueprint** → Repo `fizzybubbele/poolbar-ausweise` wählen
+3. `render.yaml` wird automatisch erkannt → **Apply**
 
-| Plan | Upload-Limit | Batch-Dauer |
-|------|--------------|-------------|
-| Hobby (Free) | ~4,5 MB | max. 10 s |
-| Pro | ~100 MB | max. 120 s (konfiguriert) |
+Fertig — URL z. B. `https://poolbar-ausweise.onrender.com`
 
-Für große Foto-ZIPs und 100+ Ausweise: **Docker** oder Vercel **Pro**.
+| Free Tier | Limit |
+|-----------|-------|
+| Kosten | 0 € |
+| RAM | 512 MB |
+| Sleep | nach 15 Min. Inaktivität (erster Aufruf ~30 s) |
+| Upload | für kleinere ZIPs OK, große Batches ggf. in Teilen |
 
-Nach Push auf `main` deployt Vercel automatisch neu.
+Nach jedem Push auf `main` deployt Render automatisch neu.
 
-### Docker (eigener Server)
+---
+
+### Option B: Cloudflare Tunnel (0 €, vom Mac)
+
+App läuft lokal, bekommt eine **öffentliche HTTPS-URL** — ohne Server-Miete.
+
+```bash
+npm install
+npm run build
+npm start          # Terminal 1
+
+# Terminal 2:
+brew install cloudflared   # einmalig
+npm run tunnel             # gibt *.trycloudflare.com URL aus
+```
+
+Oder mit Docker:
+
+```bash
+docker compose up -d --build
+npm run tunnel
+```
+
+**Vorteil:** Daten bleiben auf eurem Rechner. **Nachteil:** Mac muss laufen.
+
+Für feste Subdomain (z. B. `ausweise.poolbar.at`): [Cloudflare Tunnel Doku](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/)
+
+---
+
+### Option C: Docker auf free VPS (Oracle Cloud Always Free)
+
+0 € VPS mit 4 ARM-Cores — für große Batches am stabilsten.
 
 ```bash
 git clone git@github.com:fizzybubbele/poolbar-ausweise.git
@@ -80,20 +112,21 @@ cd poolbar-ausweise
 docker compose up -d --build
 ```
 
-App läuft auf **http://localhost:3000** (Port in `docker-compose.yml` anpassbar).
+[Oracle Cloud Free Tier](https://www.oracle.com/cloud/free/) → Ubuntu VM → Port 3000 (+ Firewall) → optional Caddy für HTTPS.
 
-Nur Image bauen:
+---
 
-```bash
-docker build -t poolbar-ausweise .
-docker run -p 3000:3000 poolbar-ausweise
-```
-
-Für HTTPS: nginx/Caddy als Reverse Proxy davor (z. B. `ausweise.poolbar.at`).
-
-### Lokal wie Produktion testen
+### Lokal testen (wie Produktion)
 
 ```bash
 npm run build
 npm start
 ```
+
+### Docker lokal / auf eigenem Server
+
+```bash
+docker compose up -d --build
+```
+
+App auf **http://localhost:3000**

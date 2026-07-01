@@ -1,0 +1,13 @@
+# Render Free Tier — deploy from GitHub without Vercel
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: poolbar-ausweise
+    runtime: docker
+    plan: free
+    region: frankfurt
+    branch: main
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/generate
+    autoDeploy: true
