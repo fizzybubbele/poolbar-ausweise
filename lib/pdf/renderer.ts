@@ -101,7 +101,7 @@ export async function renderBadge(
     { key: "vorname", value: record.vorname },
     { key: "nachname", value: record.nachname },
     { key: "bereich", value: record.bereich },
-    { key: "rolle", value: record.rolle },
+    { key: "rolle", value: displayRole(record.rolle) },
     { key: "id_line", value: idLine },
     { key: "mhd", value: mhdText },
   ];
