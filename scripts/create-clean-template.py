@@ -7,28 +7,15 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "assets" / "PB_Ausweise_2026_Vorlage.pdf"
 OUT = ROOT / "assets" / "PB_Ausweise_2026_clean.pdf"
 
+# Einzelne Platzhalter-Bereiche — ohne Farbfüllung, Gradient bleibt sichtbar
 REDACT_RECTS = [
-    (99.5, 31.0, 165.0, 52.0),
-    (99.5, 61.0, 155.0, 83.0),
-    (30.0, 115.0, 90.0, 131.0),
-    (192.0, 115.0, 255.0, 131.0),
+    (99.5, 31.0, 165.0, 43.8),   # <<Vorname>>
+    (99.5, 39.0, 165.0, 51.8),   # <<Nachname>>
+    (99.5, 61.8, 155.0, 74.6),   # <<Bereich>>
+    (99.5, 69.8, 145.0, 82.6),   # <<Rolle>>
+    (32.3, 116.6, 90.0, 129.4),  # MA/BL / ID XXXX
+    (194.3, 116.6, 255.0, 129.4),  # MHD
 ]
-
-
-def sample_fill(page: fitz.Page, rect: fitz.Rect) -> tuple[float, float, float]:
-    pix = page.get_pixmap(dpi=200)
-    x0, y0, x1, y1 = rect
-    sx0 = int(x0 / page.rect.width * pix.width)
-    sy0 = int(y0 / page.rect.height * pix.height)
-    sx1 = int(x1 / page.rect.width * pix.width)
-    sy_sample = max(0, int(y0 / page.rect.height * pix.height) - 3)
-    colors = []
-    for sx in range(sx0, max(sx0 + 1, sx1), max(1, (sx1 - sx0) // 5)):
-        colors.append(pix.pixel(sx, sy_sample)[:3])
-    r = sum(c[0] for c in colors) / len(colors) / 255
-    g = sum(c[1] for c in colors) / len(colors) / 255
-    b = sum(c[2] for c in colors) / len(colors) / 255
-    return r, g, b
 
 
 def main() -> None:
@@ -43,9 +30,7 @@ def main() -> None:
         new_page = clean.new_page(width=page.rect.width, height=page.rect.height)
         new_page.show_pdf_page(page.rect, doc, i)
         for coords in REDACT_RECTS:
-            rect = fitz.Rect(*coords)
-            fill = sample_fill(page, rect)
-            new_page.add_redact_annot(rect, fill=fill)
+            new_page.add_redact_annot(fitz.Rect(*coords))
         new_page.apply_redactions()
 
     clean.save(OUT)

@@ -6,7 +6,7 @@
   "pageWidth": 285.78,
   "pageHeight": 195.07,
   "fontSize": 9,
-  "textColor": { "r": 0.086, "g": 0.094, "b": 0.408 },
+  "textColor": { "r": 0, "g": 0, "b": 0 },
   "fields": {
     "vorname": {
       "textX": 99.5,

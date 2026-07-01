@@ -4,7 +4,9 @@ import { isAuthConfigured, verifyUser } from "@/lib/auth/users";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
-  secret: process.env.AUTH_SECRET,
+  secret:
+    process.env.AUTH_SECRET ??
+    (process.env.AUTH_DISABLED === "true" ? "local-dev-auth-disabled" : undefined),
   providers: [
     Credentials({
       name: "Anmeldung",
