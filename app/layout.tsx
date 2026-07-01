@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AuthProvider } from "@/components/auth-provider";
+import { SiteFooter } from "@/components/site-footer";
 import { isAuthEnabled } from "@/lib/auth/users";
 import "./globals.css";
 
@@ -15,8 +16,11 @@ export default function RootLayout({
 
   return (
     <html lang="de">
-      <body className="antialiased min-h-screen">
-        <AuthProvider enabled={authEnabled}>{children}</AuthProvider>
+      <body className="flex min-h-screen flex-col antialiased">
+        <AuthProvider enabled={authEnabled}>
+          <div className="flex-1">{children}</div>
+          <SiteFooter />
+        </AuthProvider>
       </body>
     </html>
   );
