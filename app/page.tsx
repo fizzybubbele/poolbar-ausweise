@@ -6,6 +6,8 @@ import type { PersonRecord, ValidationError } from "@/lib/types";
 
 type Step = "upload" | "review" | "done";
 
+const BATCH_CHUNK_SIZE = 20;
+
 export default function HomePage() {
   const [step, setStep] = useState<Step>("upload");
   const [dataFile, setDataFile] = useState<File | null>(null);
@@ -108,39 +110,85 @@ export default function HomePage() {
 
   const handleGenerate = async () => {
     setLoading(true);
-    setMessage("Generierung läuft — bei großen Batches online 1–3 Minuten warten…");
+    const useChunks = validCount > BATCH_CHUNK_SIZE;
+    const chunkCount = useChunks
+      ? Math.ceil(validCount / BATCH_CHUNK_SIZE)
+      : 1;
+
     try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        body: buildFormData("batch"),
-      });
+      const JSZip = useChunks ? (await import("jszip")).default : null;
+      const masterZip = JSZip ? new JSZip() : null;
+      let totalGenerated = 0;
 
-      const validationHeader = res.headers.get("X-Validation-Errors");
-      if (validationHeader) {
-        setErrors(JSON.parse(validationHeader));
-      }
+      for (let i = 0; i < chunkCount; i++) {
+        setMessage(
+          useChunks
+            ? `Generiere Teil ${i + 1}/${chunkCount} — Tab offen lassen…`
+            : "Generierung läuft — online kann das 1–3 Minuten dauern…"
+        );
 
-      if (!res.ok) {
-        let errorText = "Generierung fehlgeschlagen";
-        try {
-          const data = await res.json();
-          errorText = data.error ?? errorText;
-        } catch {
-          errorText = (await res.text()) || errorText;
+        const fd = buildFormData("batch");
+        const chunkStartId = Number(startId) + i * BATCH_CHUNK_SIZE;
+        fd.set("startId", String(chunkStartId));
+        if (useChunks) {
+          fd.append("chunkOffset", String(i * BATCH_CHUNK_SIZE));
+          fd.append("chunkLimit", String(BATCH_CHUNK_SIZE));
         }
-        throw new Error(errorText);
+
+        const res = await fetch("/api/generate", {
+          method: "POST",
+          body: fd,
+        });
+
+        const validationHeader = res.headers.get("X-Validation-Errors");
+        if (validationHeader) {
+          setErrors(JSON.parse(validationHeader));
+        }
+
+        if (!res.ok) {
+          let errorText = "Generierung fehlgeschlagen";
+          try {
+            const data = await res.json();
+            errorText = data.error ?? errorText;
+          } catch {
+            errorText = (await res.text()) || errorText;
+          }
+          throw new Error(errorText);
+        }
+
+        const count = Number(res.headers.get("X-Generated-Count") ?? 0);
+        totalGenerated += count;
+        const blob = await res.blob();
+
+        if (useChunks && masterZip && JSZip) {
+          const partZip = await JSZip.loadAsync(blob);
+          for (const [entryPath, file] of Object.entries(partZip.files)) {
+            if (file.dir || entryPath === "HINWEIS.txt") continue;
+            masterZip.file(entryPath, await file.async("uint8array"));
+          }
+          continue;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "ausweise.zip";
+        a.click();
+        URL.revokeObjectURL(url);
       }
 
-      const count = Number(res.headers.get("X-Generated-Count") ?? validCount);
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "ausweise.zip";
-      a.click();
-      URL.revokeObjectURL(url);
+      if (useChunks && masterZip) {
+        setMessage("ZIP wird zusammengefügt…");
+        const blob = await masterZip.generateAsync({ type: "blob" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "ausweise.zip";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
 
-      setGeneratedCount(count);
+      setGeneratedCount(totalGenerated);
       setMessage(null);
       setStep("done");
     } catch (err) {
@@ -326,8 +374,10 @@ export default function HomePage() {
         <section className="rounded-2xl border border-neutral-800 bg-neutral-950 p-6">
           <h2 className="text-lg font-medium">Fertig</h2>
           <p className="mt-2 text-neutral-400">
-            {generatedCount} Ausweise wurden generiert. Die ZIP enthält alle
-            Einzel-PDFs plus <code>ausweise_sammel.pdf</code>.
+            {generatedCount} Ausweise wurden generiert.
+            {generatedCount > BATCH_CHUNK_SIZE
+              ? " Online als Teile generiert und zu einer ZIP zusammengefügt."
+              : " Die ZIP enthält alle Einzel-PDFs."}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <button

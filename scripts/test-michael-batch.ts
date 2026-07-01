@@ -1,9 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
-import {
-  extractPhotosFromZip,
-  parseDataFile,
-} from "../lib/parsers/csv-xlsx";
+import { parseDataFile } from "../lib/parsers/csv-xlsx";
+import { PhotoZipStore } from "../lib/parsers/photo-zip";
 import { renderBadges } from "../lib/pdf/renderer";
 import { buildExportBundle } from "../lib/export";
 import { getValidRecords, validateRecords } from "../lib/validation";
@@ -22,8 +20,8 @@ async function main() {
   const zipBuffer = await fs.readFile(ZIP_PATH);
 
   const records = parseDataFile(dataBuffer, path.basename(XLSX_PATH));
-  const photos = await extractPhotosFromZip(zipBuffer);
-  const errors = validateRecords(records, photos, true);
+  const photoStore = await PhotoZipStore.open(zipBuffer);
+  const errors = validateRecords(records, photoStore.photoNames(), true);
   const valid = getValidRecords(records, errors);
 
   console.log("Datensätze:", records.length);
@@ -41,7 +39,7 @@ async function main() {
   }
 
   const options = { startId: 1001, mhd: "07/08/26" };
-  const pdfs = await renderBadges(valid, options, photos);
+  const pdfs = await renderBadges(valid, options, photoStore);
   const { mergedPdf, zipBytes } = await buildExportBundle(pdfs);
 
   await fs.mkdir(outDir, { recursive: true });

@@ -25,7 +25,10 @@ async function main() {
     }
   }
 
-  const errors = validateRecords(records, photos, true);
+  const photoKeys = new Set(
+    Object.keys(photos).map((name) => name.toLowerCase())
+  );
+  const errors = validateRecords(records, photoKeys, true);
   const valid = getValidRecords(records, errors);
   const ma = valid.find((r) => r.rolle.toUpperCase() === "MA");
   const bl = valid.find((r) => r.rolle.toUpperCase() === "BL");

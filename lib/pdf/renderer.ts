@@ -14,6 +14,7 @@ import {
   loadTemplatePdfBytes,
 } from "@/lib/pdf/templates";
 import { displayRole } from "@/lib/parsers/name-role";
+import { PhotoZipStore } from "@/lib/parsers/photo-zip";
 
 type RenderContext = {
   templateDoc: PDFDocument;
@@ -35,6 +36,18 @@ function buildPhotoMap(photos: Record<string, Buffer>): Map<string, Buffer> {
     map.set(name.toLowerCase(), bytes);
   }
   return map;
+}
+
+async function resolvePhotoBytes(
+  photos: Record<string, Buffer> | PhotoZipStore,
+  filename: string
+): Promise<Buffer | undefined> {
+  if (!filename.trim()) return undefined;
+  if (photos instanceof PhotoZipStore) {
+    return photos.getPhoto(filename);
+  }
+  const map = buildPhotoMap(photos);
+  return map.get(filename.toLowerCase());
 }
 
 function safeBadgeFilename(record: PersonRecord): string {
@@ -321,10 +334,9 @@ export async function renderBadge(
 export async function renderBadges(
   records: PersonRecord[],
   options: GenerateOptions,
-  photos: Record<string, Buffer>
+  photos: Record<string, Buffer> | PhotoZipStore
 ): Promise<{ filename: string; bytes: Uint8Array }[]> {
   const ctx = await createRenderContext();
-  const photoMap = buildPhotoMap(photos);
   const results: { filename: string; bytes: Uint8Array }[] = [];
   let nextId = options.startId;
 
@@ -333,7 +345,7 @@ export async function renderBadges(
     const withId = { ...record, id };
     if (!record.id) nextId += 1;
 
-    const photoBytes = photoMap.get(record.photoFilename.toLowerCase());
+    const photoBytes = await resolvePhotoBytes(photos, record.photoFilename);
     const bytes = await renderBadgeWithContext(ctx, withId, options, photoBytes);
     results.push({ filename: `${safeBadgeFilename(withId)}.pdf`, bytes });
   }
@@ -344,13 +356,14 @@ export async function renderBadges(
 export async function renderBatchZip(
   records: PersonRecord[],
   options: GenerateOptions,
-  photos: Record<string, Buffer>
+  photos: Record<string, Buffer> | PhotoZipStore
 ): Promise<{ zipBytes: Uint8Array; generatedCount: number }> {
   const JSZip = (await import("jszip")).default;
   const ctx = await createRenderContext();
-  const photoMap = buildPhotoMap(photos);
   const zip = new JSZip();
-  const merged = await PDFDocument.create();
+  const includeMerged =
+    process.env.RENDER !== "true" && records.length <= 40;
+  const merged = includeMerged ? await PDFDocument.create() : null;
   let nextId = options.startId;
   let generatedCount = 0;
 
@@ -359,20 +372,29 @@ export async function renderBatchZip(
     const withId = { ...record, id };
     if (!record.id) nextId += 1;
 
-    const photoBytes = photoMap.get(record.photoFilename.toLowerCase());
+    const photoBytes = await resolvePhotoBytes(photos, record.photoFilename);
     const bytes = await renderBadgeWithContext(ctx, withId, options, photoBytes);
     zip.file(`${safeBadgeFilename(withId)}.pdf`, bytes);
 
-    const doc = await PDFDocument.load(bytes);
-    const pages = await merged.copyPages(doc, doc.getPageIndices());
-    for (const page of pages) {
-      merged.addPage(page);
+    if (merged) {
+      const doc = await PDFDocument.load(bytes);
+      const pages = await merged.copyPages(doc, doc.getPageIndices());
+      for (const page of pages) {
+        merged.addPage(page);
+      }
     }
+
     generatedCount += 1;
   }
 
-  const mergedPdf = await merged.save();
-  zip.file("ausweise_sammel.pdf", mergedPdf);
+  if (merged) {
+    zip.file("ausweise_sammel.pdf", await merged.save());
+  } else if (process.env.RENDER === "true") {
+    zip.file(
+      "HINWEIS.txt",
+      "Online-Export: Einzel-PDFs enthalten. Sammel-PDF lokal generieren oder in Teilen herunterladen."
+    );
+  }
 
   const zipBytes = await zip.generateAsync({
     type: "uint8array",

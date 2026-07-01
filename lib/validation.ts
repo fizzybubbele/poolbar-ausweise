@@ -4,13 +4,10 @@ import { isBlRole, isMaRole } from "@/lib/parsers/name-role";
 
 export function validateRecords(
   records: PersonRecord[],
-  photos: Record<string, Buffer>,
+  photoKeys: Set<string>,
   requirePhotos = true
 ): ValidationError[] {
   const errors: ValidationError[] = [];
-  const photoKeys = new Set(
-    Object.keys(photos).map((name) => name.toLowerCase())
-  );
 
   for (const record of records) {
     const row = record.rowIndex;
