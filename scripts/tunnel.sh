@@ -10,7 +10,7 @@ if ! command -v cloudflared >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! curl -sf http://127.0.0.1:3000/api/generate >/dev/null 2>&1; then
+if ! curl -sf http://127.0.0.1:3000/api/health >/dev/null 2>&1; then
   echo "Starte App auf Port 3000 …"
   if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
     docker compose up -d --build
@@ -23,7 +23,7 @@ if ! curl -sf http://127.0.0.1:3000/api/generate >/dev/null 2>&1; then
   fi
   echo "Warte auf App …"
   for _ in $(seq 1 30); do
-    if curl -sf http://127.0.0.1:3000/api/generate >/dev/null 2>&1; then
+    if curl -sf http://127.0.0.1:3000/api/health >/dev/null 2>&1; then
       break
     fi
     sleep 2

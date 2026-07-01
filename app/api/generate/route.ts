@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 import {
   extractPhotosFromZip,
   parseDataFile,
@@ -25,6 +26,11 @@ function parseOptions(formData: FormData): GenerateOptions {
 }
 
 export async function POST(request: NextRequest) {
+  const session = await auth();
+  if (!session) {
+    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
+  }
+
   try {
     const formData = await request.formData();
     const dataFile = formData.get("dataFile");
@@ -120,5 +126,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
+  const session = await auth();
+  if (!session) {
+    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
+  }
   return NextResponse.json({ status: "ok", templates: ["MA", "BL"] });
 }

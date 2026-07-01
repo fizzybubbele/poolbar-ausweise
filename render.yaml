@@ -9,5 +9,5 @@ services:
     region: frankfurt
     branch: main
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /api/generate
+    healthCheckPath: /api/health
     autoDeploy: true

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { AppHeader } from "@/components/app-header";
 import type { PersonRecord, ValidationError } from "@/lib/types";
 
 type Step = "upload" | "review" | "done";
@@ -143,19 +144,7 @@ export default function HomePage() {
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
-      <header className="mb-10">
-        <p className="text-sm uppercase tracking-widest text-lime-400/80">
-          Poolbar 2026
-        </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-          Ausweis-Generator
-        </h1>
-        <p className="mt-2 max-w-2xl text-neutral-400">
-          MA- und BL-Vorlagen aus{" "}
-          <code className="text-neutral-300">PB_Ausweise_2026_Vorlage.pdf</code>{" "}
-          — 1:1 mit Datenliste und Fotos befüllen.
-        </p>
-      </header>
+      <AppHeader />
 
       {message && (
         <div className="mb-6 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-red-200">

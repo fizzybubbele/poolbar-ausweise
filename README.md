@@ -6,10 +6,24 @@ Web-App zur automatischen Erstellung von **MA-** und **BL-Ausweisen** auf Basis 
 
 ```bash
 npm install
+cp .env.example .env.local   # Zugangsdaten anpassen
 npm run dev
 ```
 
-Öffnen: [http://localhost:3000](http://localhost:3000)
+Öffnen: [http://localhost:3000](http://localhost:3000) → Login erforderlich
+
+### Login / Benutzer
+
+In `.env.local` (lokal) bzw. als **Environment Variables** auf Render/Docker:
+
+| Variable | Beispiel | Beschreibung |
+|----------|----------|--------------|
+| `AUTH_SECRET` | `openssl rand -base64 32` | Session-Verschlüsselung (Pflicht) |
+| `AUTH_USERS` | `admin:geheim,lisa:xyz` | Mehrere User (`user:pass`) |
+| `AUTH_USERNAME` | `admin` | Alternative: ein User |
+| `AUTH_PASSWORD` | `geheim` | Passwort zum Einzel-User |
+
+Ohne gesetzte User ist Login nicht möglich.
 
 ## Ablauf
 
@@ -64,6 +78,11 @@ Dauerhaft online, 0 €, deployt direkt aus GitHub.
 
 Fertig — URL z. B. `https://poolbar-ausweise.onrender.com`
 
+**Environment Variables** in Render setzen:
+
+- `AUTH_SECRET` — z. B. Output von `openssl rand -base64 32`
+- `AUTH_USERS` — z. B. `admin:dein-passwort`
+
 | Free Tier | Limit |
 |-----------|-------|
 | Kosten | 0 € |
@@ -109,6 +128,7 @@ Für feste Subdomain (z. B. `ausweise.poolbar.at`): [Cloudflare Tunnel Doku](htt
 ```bash
 git clone git@github.com:fizzybubbele/poolbar-ausweise.git
 cd poolbar-ausweise
+cp .env.example .env.local   # AUTH_SECRET + AUTH_USERS eintragen
 docker compose up -d --build
 ```
 
