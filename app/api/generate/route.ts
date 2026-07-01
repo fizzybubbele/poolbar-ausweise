@@ -5,8 +5,7 @@ import {
   extractPhotosFromZip,
   parseDataFile,
 } from "@/lib/parsers/csv-xlsx";
-import { renderBadges } from "@/lib/pdf/renderer";
-import { buildExportBundle } from "@/lib/export";
+import { renderBadges, renderBatchZip } from "@/lib/pdf/renderer";
 import {
   getValidRecords,
   pickPreviewRecords,
@@ -92,10 +91,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const pdfs = await renderBadges(targetRecords, options, photos);
-
     if (mode === "preview") {
-      const merged = pdfs.length === 1 ? pdfs[0].bytes : await import("@/lib/pdf/renderer").then(m => m.mergePdfs(pdfs));
+      const pdfs = await renderBadges(targetRecords, options, photos);
+      const merged =
+        pdfs.length === 1
+          ? pdfs[0].bytes
+          : await import("@/lib/pdf/renderer").then((m) => m.mergePdfs(pdfs));
       return new NextResponse(Buffer.from(merged), {
         headers: {
           "Content-Type": "application/pdf",
@@ -105,14 +106,19 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const { mergedPdf, zipBytes } = await buildExportBundle(pdfs);
+    const { zipBytes, generatedCount } = await renderBatchZip(
+      targetRecords,
+      options,
+      photos
+    );
 
-    return NextResponse.json({
-      errors,
-      generatedCount: pdfs.length,
-      zipBase64: Buffer.from(zipBytes!).toString("base64"),
-      mergedBase64: Buffer.from(mergedPdf!).toString("base64"),
-      filenames: pdfs.map((p) => p.filename),
+    return new NextResponse(Buffer.from(zipBytes), {
+      headers: {
+        "Content-Type": "application/zip",
+        "Content-Disposition": 'attachment; filename="ausweise.zip"',
+        "X-Generated-Count": String(generatedCount),
+        "X-Validation-Errors": JSON.stringify(errors),
+      },
     });
   } catch (error) {
     console.error(error);

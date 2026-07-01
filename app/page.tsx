@@ -6,17 +6,6 @@ import type { PersonRecord, ValidationError } from "@/lib/types";
 
 type Step = "upload" | "review" | "done";
 
-function downloadBase64(base64: string, filename: string, mime: string) {
-  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-  const blob = new Blob([bytes], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 export default function HomePage() {
   const [step, setStep] = useState<Step>("upload");
   const [dataFile, setDataFile] = useState<File | null>(null);
@@ -28,8 +17,6 @@ export default function HomePage() {
   const [validCount, setValidCount] = useState(0);
   const [photoCount, setPhotoCount] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [zipBase64, setZipBase64] = useState<string | null>(null);
-  const [mergedBase64, setMergedBase64] = useState<string | null>(null);
   const [generatedCount, setGeneratedCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -121,19 +108,40 @@ export default function HomePage() {
 
   const handleGenerate = async () => {
     setLoading(true);
-    setMessage(null);
+    setMessage("Generierung läuft — bei großen Batches online 1–3 Minuten warten…");
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
         body: buildFormData("batch"),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Generierung fehlgeschlagen");
 
-      setErrors(data.errors ?? []);
-      setZipBase64(data.zipBase64 ?? null);
-      setMergedBase64(data.mergedBase64 ?? null);
-      setGeneratedCount(data.generatedCount ?? 0);
+      const validationHeader = res.headers.get("X-Validation-Errors");
+      if (validationHeader) {
+        setErrors(JSON.parse(validationHeader));
+      }
+
+      if (!res.ok) {
+        let errorText = "Generierung fehlgeschlagen";
+        try {
+          const data = await res.json();
+          errorText = data.error ?? errorText;
+        } catch {
+          errorText = (await res.text()) || errorText;
+        }
+        throw new Error(errorText);
+      }
+
+      const count = Number(res.headers.get("X-Generated-Count") ?? validCount);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "ausweise.zip";
+      a.click();
+      URL.revokeObjectURL(url);
+
+      setGeneratedCount(count);
+      setMessage(null);
       setStep("done");
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Unbekannter Fehler");
@@ -287,9 +295,17 @@ export default function HomePage() {
               disabled={loading || validCount === 0}
               className="rounded-lg bg-lime-500 px-4 py-2 text-sm font-medium text-black disabled:opacity-40"
             >
-              {loading ? "Generiere…" : `${validCount} Ausweise generieren`}
+              {loading
+                ? `Generiere ${validCount}…`
+                : `${validCount} Ausweise generieren`}
             </button>
           </div>
+
+          {loading && (
+            <p className="text-sm text-neutral-400">
+              Bitte Tab offen lassen — Download startet automatisch.
+            </p>
+          )}
 
           {previewUrl && (
             <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
@@ -310,39 +326,14 @@ export default function HomePage() {
         <section className="rounded-2xl border border-neutral-800 bg-neutral-950 p-6">
           <h2 className="text-lg font-medium">Fertig</h2>
           <p className="mt-2 text-neutral-400">
-            {generatedCount} Ausweise wurden generiert.
+            {generatedCount} Ausweise wurden generiert. Die ZIP enthält alle
+            Einzel-PDFs plus <code>ausweise_sammel.pdf</code>.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            {zipBase64 && (
-              <button
-                onClick={() =>
-                  downloadBase64(zipBase64, "ausweise.zip", "application/zip")
-                }
-                className="rounded-lg bg-lime-500 px-4 py-2 text-sm font-medium text-black"
-              >
-                ZIP herunterladen
-              </button>
-            )}
-            {mergedBase64 && (
-              <button
-                onClick={() =>
-                  downloadBase64(
-                    mergedBase64,
-                    "ausweise_sammel.pdf",
-                    "application/pdf"
-                  )
-                }
-                className="rounded-lg border border-neutral-700 px-4 py-2 text-sm"
-              >
-                Sammel-PDF herunterladen
-              </button>
-            )}
             <button
               onClick={() => {
                 setStep("upload");
                 setPreviewUrl(null);
-                setZipBase64(null);
-                setMergedBase64(null);
               }}
               className="rounded-lg border border-neutral-700 px-4 py-2 text-sm"
             >

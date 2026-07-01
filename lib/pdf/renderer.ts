@@ -15,6 +15,102 @@ import {
 } from "@/lib/pdf/templates";
 import { displayRole } from "@/lib/parsers/name-role";
 
+type RenderContext = {
+  templateDoc: PDFDocument;
+  fontBytes: Buffer;
+};
+
+async function createRenderContext(): Promise<RenderContext> {
+  const [templatePdfBytes, fontBytes] = await Promise.all([
+    loadTemplatePdfBytes(),
+    loadFontBytes(),
+  ]);
+  const templateDoc = await PDFDocument.load(templatePdfBytes);
+  return { templateDoc, fontBytes };
+}
+
+function buildPhotoMap(photos: Record<string, Buffer>): Map<string, Buffer> {
+  const map = new Map<string, Buffer>();
+  for (const [name, bytes] of Object.entries(photos)) {
+    map.set(name.toLowerCase(), bytes);
+  }
+  return map;
+}
+
+function safeBadgeFilename(record: PersonRecord): string {
+  return `${record.nachname}_${record.vorname}`
+    .replace(/[^a-zA-Z0-9äöüÄÖÜß._-]/g, "_")
+    .replace(/_+/g, "_");
+}
+
+async function renderBadgeWithContext(
+  ctx: RenderContext,
+  record: PersonRecord,
+  options: GenerateOptions,
+  photoBytes?: Buffer
+): Promise<Uint8Array> {
+  const template = getTemplateForRole(record.rolle);
+  if (!template) {
+    throw new Error(`Unbekannte Rolle: ${record.rolle}`);
+  }
+
+  const pdfDoc = await PDFDocument.create();
+  pdfDoc.registerFontkit(fontkit);
+
+  const font = await pdfDoc.embedFont(ctx.fontBytes);
+  const [embeddedPage] = await pdfDoc.embedPdf(ctx.templateDoc, [
+    template.pdfPageIndex,
+  ]);
+
+  const page = pdfDoc.addPage([template.pageWidth, template.pageHeight]);
+  page.drawPage(embeddedPage, {
+    x: 0,
+    y: 0,
+    width: template.pageWidth,
+    height: template.pageHeight,
+  });
+
+  const idNumber = record.id ?? String(options.startId);
+  const mhdText = record.gueltig_bis
+    ? `MHD-${record.gueltig_bis}`
+    : `MHD-${options.mhd}`;
+  const idLine = `${template.rolePrefix} / ID ${idNumber}`;
+
+  drawFieldText(page, template.fields.vorname, record.vorname, font, template.fontSize);
+  drawFieldText(page, template.fields.nachname, record.nachname, font, template.fontSize);
+  drawBereichAndRolle(
+    page,
+    template,
+    record.bereich,
+    displayRole(record.rolle),
+    font
+  );
+  drawFieldText(page, template.fields.id_line, idLine, font, template.fontSize);
+  drawFieldText(page, template.fields.mhd, mhdText, font, template.fontSize);
+
+  if (photoBytes) {
+    const photoField = template.fields.photo;
+    const prepared = await preparePhoto(
+      photoBytes,
+      photoField.width,
+      photoField.height
+    );
+    const image =
+      prepared.kind === "png"
+        ? await pdfDoc.embedPng(prepared.bytes)
+        : await pdfDoc.embedJpg(prepared.bytes);
+
+    page.drawImage(image, {
+      x: photoField.x,
+      y: photoField.y,
+      width: photoField.width,
+      height: photoField.height,
+    });
+  }
+
+  return pdfDoc.save();
+}
+
 function toRgb(color: RgbColor) {
   return rgb(color.r, color.g, color.b);
 }
@@ -26,7 +122,7 @@ async function preparePhoto(
 ): Promise<{ bytes: Buffer; kind: "png" | "jpg" }> {
   const png = await sharp(photoBytes)
     .rotate()
-    .resize(Math.round(width * 4), Math.round(height * 4), {
+    .resize(Math.round(width * 2), Math.round(height * 2), {
       fit: "cover",
       position: "centre",
     })
@@ -218,72 +314,8 @@ export async function renderBadge(
   options: GenerateOptions,
   photoBytes?: Buffer
 ): Promise<Uint8Array> {
-  const template = getTemplateForRole(record.rolle);
-  if (!template) {
-    throw new Error(`Unbekannte Rolle: ${record.rolle}`);
-  }
-
-  const [templatePdfBytes, fontBytes] = await Promise.all([
-    loadTemplatePdfBytes(),
-    loadFontBytes(),
-  ]);
-
-  const templateDoc = await PDFDocument.load(templatePdfBytes);
-  const pdfDoc = await PDFDocument.create();
-  pdfDoc.registerFontkit(fontkit);
-
-  const font = await pdfDoc.embedFont(fontBytes);
-  const [embeddedPage] = await pdfDoc.embedPdf(templateDoc, [
-    template.pdfPageIndex,
-  ]);
-
-  const page = pdfDoc.addPage([template.pageWidth, template.pageHeight]);
-  page.drawPage(embeddedPage, {
-    x: 0,
-    y: 0,
-    width: template.pageWidth,
-    height: template.pageHeight,
-  });
-
-  const idNumber = record.id ?? String(options.startId);
-  const mhdText = record.gueltig_bis
-    ? `MHD-${record.gueltig_bis}`
-    : `MHD-${options.mhd}`;
-  const idLine = `${template.rolePrefix} / ID ${idNumber}`;
-
-  drawFieldText(page, template.fields.vorname, record.vorname, font, template.fontSize);
-  drawFieldText(page, template.fields.nachname, record.nachname, font, template.fontSize);
-  drawBereichAndRolle(
-    page,
-    template,
-    record.bereich,
-    displayRole(record.rolle),
-    font
-  );
-  drawFieldText(page, template.fields.id_line, idLine, font, template.fontSize);
-  drawFieldText(page, template.fields.mhd, mhdText, font, template.fontSize);
-
-  if (photoBytes) {
-    const photoField = template.fields.photo;
-    const prepared = await preparePhoto(
-      photoBytes,
-      photoField.width,
-      photoField.height
-    );
-    const image =
-      prepared.kind === "png"
-        ? await pdfDoc.embedPng(prepared.bytes)
-        : await pdfDoc.embedJpg(prepared.bytes);
-
-    page.drawImage(image, {
-      x: photoField.x,
-      y: photoField.y,
-      width: photoField.width,
-      height: photoField.height,
-    });
-  }
-
-  return pdfDoc.save();
+  const ctx = await createRenderContext();
+  return renderBadgeWithContext(ctx, record, options, photoBytes);
 }
 
 export async function renderBadges(
@@ -291,6 +323,8 @@ export async function renderBadges(
   options: GenerateOptions,
   photos: Record<string, Buffer>
 ): Promise<{ filename: string; bytes: Uint8Array }[]> {
+  const ctx = await createRenderContext();
+  const photoMap = buildPhotoMap(photos);
   const results: { filename: string; bytes: Uint8Array }[] = [];
   let nextId = options.startId;
 
@@ -299,19 +333,54 @@ export async function renderBadges(
     const withId = { ...record, id };
     if (!record.id) nextId += 1;
 
-    const photoKey = record.photoFilename.toLowerCase();
-    const photoBytes = Object.entries(photos).find(
-      ([name]) => name.toLowerCase() === photoKey
-    )?.[1];
-
-    const bytes = await renderBadge(withId, options, photoBytes);
-    const safeName = `${record.nachname}_${record.vorname}`
-      .replace(/[^a-zA-Z0-9äöüÄÖÜß._-]/g, "_")
-      .replace(/_+/g, "_");
-    results.push({ filename: `${safeName}.pdf`, bytes });
+    const photoBytes = photoMap.get(record.photoFilename.toLowerCase());
+    const bytes = await renderBadgeWithContext(ctx, withId, options, photoBytes);
+    results.push({ filename: `${safeBadgeFilename(withId)}.pdf`, bytes });
   }
 
   return results;
+}
+
+export async function renderBatchZip(
+  records: PersonRecord[],
+  options: GenerateOptions,
+  photos: Record<string, Buffer>
+): Promise<{ zipBytes: Uint8Array; generatedCount: number }> {
+  const JSZip = (await import("jszip")).default;
+  const ctx = await createRenderContext();
+  const photoMap = buildPhotoMap(photos);
+  const zip = new JSZip();
+  const merged = await PDFDocument.create();
+  let nextId = options.startId;
+  let generatedCount = 0;
+
+  for (const record of records) {
+    const id = record.id ?? String(nextId);
+    const withId = { ...record, id };
+    if (!record.id) nextId += 1;
+
+    const photoBytes = photoMap.get(record.photoFilename.toLowerCase());
+    const bytes = await renderBadgeWithContext(ctx, withId, options, photoBytes);
+    zip.file(`${safeBadgeFilename(withId)}.pdf`, bytes);
+
+    const doc = await PDFDocument.load(bytes);
+    const pages = await merged.copyPages(doc, doc.getPageIndices());
+    for (const page of pages) {
+      merged.addPage(page);
+    }
+    generatedCount += 1;
+  }
+
+  const mergedPdf = await merged.save();
+  zip.file("ausweise_sammel.pdf", mergedPdf);
+
+  const zipBytes = await zip.generateAsync({
+    type: "uint8array",
+    compression: "DEFLATE",
+    compressionOptions: { level: 6 },
+  });
+
+  return { zipBytes, generatedCount };
 }
 
 export async function mergePdfs(
