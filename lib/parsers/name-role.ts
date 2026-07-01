@@ -14,7 +14,7 @@ export function splitFullName(fullName: string): {
 }
 
 /**
- * MA, MA E, MA P → MA-Vorlage; BL → BL-Vorlage
+ * MA, MA E (Extern), MA P (Personal) → MA-Vorlage; BL → BL-Vorlage
  */
 export function normalizeRole(rolle: string): "MA" | "BL" | null {
   const normalized = rolle.trim().toUpperCase();
@@ -31,8 +31,11 @@ export function isBlRole(rolle: string): boolean {
   return normalizeRole(rolle) === "BL";
 }
 
-/** Anzeige auf dem Ausweis: MA E / MA P → MA */
+/** Anzeige auf dem Ausweis */
 export function displayRole(rolle: string): string {
+  const normalized = rolle.trim().toUpperCase();
+  if (normalized === "MA E") return "MA [Extern]";
+  if (normalized === "MA P") return "MA [Personal]";
   const template = normalizeRole(rolle);
-  return template ?? rolle.trim().toUpperCase();
+  return template ?? normalized;
 }

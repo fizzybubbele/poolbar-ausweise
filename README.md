@@ -47,7 +47,7 @@ AUTH_DISABLED=true
 | Vorname   | Sarra                 | |
 | Name      | Victor Dölle          | wird automatisch geteilt |
 | Bereich   | Bauten                | |
-| Rolle     | MA, MA E, MA P oder BL | |
+| Rolle     | MA, MA E (Extern), MA P (Personal) oder BL | MA E → „MA [EXTERN]“, MA P → „MA [PERSONAL]“ |
 | @Datei    | abid_sarra.png        | |
 
 ## Vorlagen
