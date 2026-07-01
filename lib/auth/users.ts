@@ -38,3 +38,8 @@ export function verifyUser(
 export function isAuthConfigured(): boolean {
   return parseUsers().size > 0;
 }
+
+export function isAuthEnabled(): boolean {
+  if (process.env.AUTH_DISABLED === "true") return false;
+  return isAuthConfigured();
+}

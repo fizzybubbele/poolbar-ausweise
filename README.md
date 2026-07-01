@@ -25,6 +25,12 @@ In `.env.local` (lokal) bzw. als **Environment Variables** auf Render/Docker:
 
 Ohne gesetzte User ist Login nicht möglich.
 
+**Lokal ohne Login:** In `.env.local` setzen:
+
+```env
+AUTH_DISABLED=true
+```
+
 ## Ablauf
 
 1. **Datendatei** hochladen (CSV, XLSX oder tab-separierte TXT)

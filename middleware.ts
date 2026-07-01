@@ -1,7 +1,12 @@
 import { auth } from "@/auth";
+import { isAuthEnabled } from "@/lib/auth/users";
 import { NextResponse } from "next/server";
 
 export default auth((req) => {
+  if (!isAuthEnabled()) {
+    return NextResponse.next();
+  }
+
   const { pathname } = req.nextUrl;
   const isLoggedIn = !!req.auth;
 
