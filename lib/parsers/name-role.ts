@@ -30,3 +30,9 @@ export function isMaRole(rolle: string): boolean {
 export function isBlRole(rolle: string): boolean {
   return normalizeRole(rolle) === "BL";
 }
+
+/** Anzeige auf dem Ausweis: MA E / MA P → MA */
+export function displayRole(rolle: string): string {
+  const template = normalizeRole(rolle);
+  return template ?? rolle.trim().toUpperCase();
+}

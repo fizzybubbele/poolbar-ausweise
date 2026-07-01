@@ -13,6 +13,7 @@ import {
   loadFontBytes,
   loadTemplatePdfBytes,
 } from "@/lib/pdf/templates";
+import { displayRole } from "@/lib/parsers/name-role";
 
 function toRgb(color: RgbColor) {
   return rgb(color.r, color.g, color.b);
