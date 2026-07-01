@@ -9,6 +9,8 @@ export interface TextFieldConfig {
   textBaselineY: number;
   fontSize?: number;
   uppercase?: boolean;
+  maxWidth?: number;
+  lineHeight?: number;
 }
 
 export interface PhotoFieldConfig {
