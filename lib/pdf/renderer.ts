@@ -35,20 +35,21 @@ async function preparePhoto(
   return { bytes: png, kind: "png" };
 }
 
+const TEXT_BLACK: RgbColor = { r: 0, g: 0, b: 0 };
+
 function drawFieldText(
   page: PDFPage,
   field: TextFieldConfig,
   text: string,
   font: PDFFont,
-  fontSize: number,
-  textColor: RgbColor
+  fontSize: number
 ) {
   page.drawText(text, {
     x: field.textX,
     y: field.textBaselineY,
     size: fontSize,
     font,
-    color: toRgb(textColor),
+    color: toRgb(TEXT_BLACK),
   });
 }
 
@@ -102,14 +103,7 @@ export async function renderBadge(
   for (const { key, value } of textFields) {
     if (key === "photo") continue;
     const field = template.fields[key] as TextFieldConfig;
-    drawFieldText(
-      page,
-      field,
-      value,
-      font,
-      template.fontSize,
-      template.textColor
-    );
+    drawFieldText(page, field, value, font, template.fontSize);
   }
 
   if (photoBytes) {

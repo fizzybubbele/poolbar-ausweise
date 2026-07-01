@@ -4,18 +4,9 @@ export interface RgbColor {
   b: number;
 }
 
-export interface CoverRect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  color: RgbColor;
-}
-
 export interface TextFieldConfig {
   textX: number;
   textBaselineY: number;
-  cover: CoverRect;
 }
 
 export interface PhotoFieldConfig {
