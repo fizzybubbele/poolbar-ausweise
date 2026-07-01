@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import type { TemplateConfig } from "@/lib/types";
+import { normalizeRole } from "@/lib/parsers/name-role";
 import maTemplate from "@/config/templates/ma-2026.json";
 import blTemplate from "@/config/templates/bl-2026.json";
 
@@ -23,7 +24,7 @@ export const TEMPLATES: Record<"MA" | "BL", TemplateConfig> = {
 };
 
 export function getTemplateForRole(rolle: string): TemplateConfig | null {
-  const normalized = rolle.trim().toUpperCase();
+  const normalized = normalizeRole(rolle);
   if (normalized === "MA") return TEMPLATES.MA;
   if (normalized === "BL") return TEMPLATES.BL;
   return null;

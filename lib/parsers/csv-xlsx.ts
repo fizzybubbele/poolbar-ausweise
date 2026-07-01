@@ -1,10 +1,12 @@
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import type { PersonRecord } from "@/lib/types";
+import { splitFullName } from "@/lib/parsers/name-role";
 
 const COLUMN_ALIASES: Record<string, keyof Omit<PersonRecord, "rowIndex">> = {
   nachname: "nachname",
   vorname: "vorname",
+  name: "name",
   bereich: "bereich",
   rolle: "rolle",
   "@datei": "photoFilename",
@@ -24,14 +26,24 @@ function mapRow(
   row: Record<string, string>,
   rowIndex: number
 ): PersonRecord | null {
-  const mapped: Partial<PersonRecord> = { rowIndex };
+  const mapped: Partial<PersonRecord & { name?: string }> = { rowIndex };
 
   for (const [rawKey, value] of Object.entries(row)) {
     const key = normalizeHeader(rawKey);
     const field = COLUMN_ALIASES[key];
     if (field && value !== undefined) {
-      mapped[field] = String(value).trim();
+      if (field === "name") {
+        mapped.name = String(value).trim();
+      } else {
+        mapped[field] = String(value).trim();
+      }
     }
+  }
+
+  if (mapped.name && !mapped.vorname && !mapped.nachname) {
+    const { vorname, nachname } = splitFullName(mapped.name);
+    mapped.vorname = vorname;
+    mapped.nachname = nachname;
   }
 
   if (

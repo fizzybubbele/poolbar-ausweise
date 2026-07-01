@@ -1,5 +1,6 @@
 import type { PersonRecord, ValidationError } from "@/lib/types";
 import { getTemplateForRole } from "@/lib/pdf/templates";
+import { isBlRole, isMaRole } from "@/lib/parsers/name-role";
 
 export function validateRecords(
   records: PersonRecord[],
@@ -52,7 +53,7 @@ export function validateRecords(
       errors.push({
         rowIndex: row,
         field: "Rolle",
-        message: `Rolle „${record.rolle}" wird nicht unterstützt (nur MA oder BL)`,
+        message: `Rolle „${record.rolle}" wird nicht unterstützt (MA, MA E, MA P oder BL)`,
         severity: "error",
       });
     }
@@ -93,7 +94,7 @@ export function getValidRecords(
 export function pickPreviewRecords(
   records: PersonRecord[]
 ): PersonRecord[] {
-  const ma = records.find((r) => r.rolle.trim().toUpperCase() === "MA");
-  const bl = records.find((r) => r.rolle.trim().toUpperCase() === "BL");
+  const ma = records.find((r) => isMaRole(r.rolle));
+  const bl = records.find((r) => isBlRole(r.rolle));
   return [ma, bl].filter((r): r is PersonRecord => Boolean(r));
 }

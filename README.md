@@ -41,13 +41,14 @@ AUTH_DISABLED=true
 
 ## Erwartetes Datenformat
 
-| Spalte    | Beispiel              |
-|-----------|-----------------------|
-| Nachname  | Abid                  |
-| Vorname   | Sarra                 |
-| Bereich   | Bauten                |
-| Rolle     | MA oder BL            |
-| @Datei    | abid_sarra.png        |
+| Spalte    | Beispiel              | Hinweis |
+|-----------|-----------------------|---------|
+| Nachname  | Abid                  | oder Spalte `Name` |
+| Vorname   | Sarra                 | |
+| Name      | Victor Dölle          | wird automatisch geteilt |
+| Bereich   | Bauten                | |
+| Rolle     | MA, MA E, MA P oder BL | |
+| @Datei    | abid_sarra.png        | |
 
 ## Vorlagen
 
