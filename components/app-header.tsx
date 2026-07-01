@@ -1,12 +1,15 @@
 "use client";
 
 import { signOut, useSession } from "next-auth/react";
+import { useAuthEnabled } from "@/components/auth-provider";
 
-export function AppHeader() {
-  const { data: session } = useSession();
-
-  if (!session?.user?.name) return null;
-
+function HeaderShell({
+  userName,
+  onLogout,
+}: {
+  userName?: string;
+  onLogout?: () => void;
+}) {
   return (
     <header className="mb-8 flex items-start justify-between gap-4">
       <div>
@@ -20,16 +23,41 @@ export function AppHeader() {
           MA- und BL-Vorlagen 1:1 befüllen — CSV/XLSX + Foto-ZIP.
         </p>
       </div>
-      <div className="flex shrink-0 items-center gap-3 pt-1">
-        <span className="text-sm text-neutral-500">{session.user.name}</span>
-        <button
-          type="button"
-          onClick={() => signOut({ callbackUrl: "/login" })}
-          className="rounded-lg border border-neutral-700 px-3 py-1.5 text-sm text-neutral-300 hover:border-neutral-500"
-        >
-          Abmelden
-        </button>
-      </div>
+      {userName && onLogout && (
+        <div className="flex shrink-0 items-center gap-3 pt-1">
+          <span className="text-sm text-neutral-500">{userName}</span>
+          <button
+            type="button"
+            onClick={onLogout}
+            className="rounded-lg border border-neutral-700 px-3 py-1.5 text-sm text-neutral-300 hover:border-neutral-500"
+          >
+            Abmelden
+          </button>
+        </div>
+      )}
     </header>
   );
+}
+
+function AppHeaderWithSession() {
+  const { data: session } = useSession();
+
+  if (!session?.user?.name) return <HeaderShell />;
+
+  return (
+    <HeaderShell
+      userName={session.user.name}
+      onLogout={() => signOut({ callbackUrl: "/login" })}
+    />
+  );
+}
+
+export function AppHeader() {
+  const authEnabled = useAuthEnabled();
+
+  if (!authEnabled) {
+    return <HeaderShell />;
+  }
+
+  return <AppHeaderWithSession />;
 }
