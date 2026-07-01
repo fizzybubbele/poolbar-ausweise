@@ -8,12 +8,12 @@
   "fontSize": 9,
   "textColor": { "r": 0, "g": 0, "b": 0 },
   "fields": {
-    "vorname": { "textX": 99.5, "textBaselineY": 151.27 },
-    "nachname": { "textX": 99.5, "textBaselineY": 143.27 },
-    "bereich": { "textX": 99.5, "textBaselineY": 120.47 },
-    "rolle": { "textX": 99.5, "textBaselineY": 112.47 },
-    "id_line": { "textX": 32.3, "textBaselineY": 65.67 },
-    "mhd": { "textX": 194.3, "textBaselineY": 65.67 },
+    "vorname": { "textX": 99.5, "textBaselineY": 151.28, "fontSize": 9 },
+    "nachname": { "textX": 99.5, "textBaselineY": 142.28, "fontSize": 9 },
+    "bereich": { "textX": 99.5, "textBaselineY": 121.75, "fontSize": 6, "uppercase": true },
+    "rolle": { "textX": 99.5, "textBaselineY": 112.75, "fontSize": 6, "uppercase": true },
+    "id_line": { "textX": 32.3, "textBaselineY": 65.67, "fontSize": 9 },
+    "mhd": { "textX": 194.3, "textBaselineY": 65.67, "fontSize": 9 },
     "photo": {
       "x": 32.34,
       "y": 79.56,

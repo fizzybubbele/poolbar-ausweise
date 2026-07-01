@@ -37,14 +37,19 @@ async function preparePhoto(
 
 const TEXT_BLACK: RgbColor = { r: 0, g: 0, b: 0 };
 
+function formatFieldText(field: TextFieldConfig, text: string): string {
+  return field.uppercase ? text.toUpperCase() : text;
+}
+
 function drawFieldText(
   page: PDFPage,
   field: TextFieldConfig,
   text: string,
   font: PDFFont,
-  fontSize: number
+  defaultFontSize: number
 ) {
-  page.drawText(text, {
+  const fontSize = field.fontSize ?? defaultFontSize;
+  page.drawText(formatFieldText(field, text), {
     x: field.textX,
     y: field.textBaselineY,
     size: fontSize,

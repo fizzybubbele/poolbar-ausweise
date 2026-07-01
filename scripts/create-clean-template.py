@@ -7,14 +7,12 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "assets" / "PB_Ausweise_2026_Vorlage.pdf"
 OUT = ROOT / "assets" / "PB_Ausweise_2026_clean.pdf"
 
-# Einzelne Platzhalter-Bereiche — ohne Farbfüllung, Gradient bleibt sichtbar
+# Layout: Vorname/Nachname 9pt (9pt Abstand), Block +12pt, Bereich/Rolle 6pt ALLCAPS (9pt Abstand)
 REDACT_RECTS = [
-    (99.5, 31.0, 165.0, 43.8),   # <<Vorname>>
-    (99.5, 39.0, 165.0, 51.8),   # <<Nachname>>
-    (99.5, 61.8, 155.0, 74.6),   # <<Bereich>>
-    (99.5, 69.8, 145.0, 82.6),   # <<Rolle>>
-    (32.3, 116.6, 90.0, 129.4),  # MA/BL / ID XXXX
-    (194.3, 116.6, 255.0, 129.4),  # MHD
+    (99.5, 31.0, 170.0, 53.0),   # Name-Block
+    (99.5, 63.0, 170.0, 83.0),   # Bereich + Rolle
+    (32.3, 116.6, 90.0, 129.4),
+    (194.3, 116.6, 255.0, 129.4),
 ]
 
 

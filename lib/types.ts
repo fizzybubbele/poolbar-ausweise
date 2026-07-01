@@ -7,6 +7,8 @@ export interface RgbColor {
 export interface TextFieldConfig {
   textX: number;
   textBaselineY: number;
+  fontSize?: number;
+  uppercase?: boolean;
 }
 
 export interface PhotoFieldConfig {
