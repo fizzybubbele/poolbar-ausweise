@@ -19,7 +19,8 @@
       "y": 79.56,
       "width": 61.96,
       "height": 83.17,
-      "fit": "cover"
+      "fit": "cover",
+      "borderRadius": 6
     }
   }
 }

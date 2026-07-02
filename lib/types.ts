@@ -19,6 +19,7 @@ export interface PhotoFieldConfig {
   width: number;
   height: number;
   fit: "cover";
+  borderRadius?: number;
 }
 
 export interface TemplateConfig {

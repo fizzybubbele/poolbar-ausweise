@@ -106,7 +106,8 @@ async function renderBadgeWithContext(
     const prepared = await preparePhoto(
       photoBytes,
       photoField.width,
-      photoField.height
+      photoField.height,
+      photoField.borderRadius ?? 6
     );
     const image =
       prepared.kind === "png"
@@ -128,21 +129,51 @@ function toRgb(color: RgbColor) {
   return rgb(color.r, color.g, color.b);
 }
 
+const PT_PER_INCH = 72;
+/** Embedded photo resolution — ~300 DPI for the ~62×83 pt slot on print. */
+const PHOTO_PRINT_DPI = 300;
+const PHOTO_JPEG_QUALITY = 95;
+
 async function preparePhoto(
   photoBytes: Buffer,
   width: number,
-  height: number
+  height: number,
+  borderRadius = 6
 ): Promise<{ bytes: Buffer; kind: "png" | "jpg" }> {
-  const png = await sharp(photoBytes)
+  const scale = PHOTO_PRINT_DPI / PT_PER_INCH;
+  const pixelWidth = Math.round(width * scale);
+  const pixelHeight = Math.round(height * scale);
+  const radius = Math.min(
+    Math.round(borderRadius * scale),
+    Math.floor(Math.min(pixelWidth, pixelHeight) / 2)
+  );
+
+  const mask = Buffer.from(
+    `<svg width="${pixelWidth}" height="${pixelHeight}">
+      <rect x="0" y="0" width="${pixelWidth}" height="${pixelHeight}" rx="${radius}" ry="${radius}" fill="#fff"/>
+    </svg>`
+  );
+
+  const meta = await sharp(photoBytes).rotate().metadata();
+  const hasAlpha = meta.hasAlpha === true;
+
+  let pipeline = sharp(photoBytes)
     .rotate()
-    .resize(Math.round(width * 2), Math.round(height * 2), {
+    .resize(pixelWidth, pixelHeight, {
       fit: "cover",
       position: "centre",
     })
-    .png()
-    .toBuffer();
+    .composite([{ input: mask, blend: "dest-in" }]);
 
-  return { bytes: png, kind: "png" };
+  if (hasAlpha) {
+    const png = await pipeline.png({ compressionLevel: 6 }).toBuffer();
+    return { bytes: png, kind: "png" };
+  }
+
+  const jpg = await pipeline
+    .jpeg({ quality: PHOTO_JPEG_QUALITY, mozjpeg: true })
+    .toBuffer();
+  return { bytes: jpg, kind: "jpg" };
 }
 
 const TEXT_BLACK: RgbColor = { r: 0, g: 0, b: 0 };
