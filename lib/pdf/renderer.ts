@@ -1,5 +1,19 @@
 import fontkit from "@pdf-lib/fontkit";
-import { PDFDocument, rgb, type PDFPage, type PDFFont } from "pdf-lib";
+import {
+  PDFDocument,
+  appendBezierCurve,
+  clip,
+  closePath,
+  endPath,
+  lineTo,
+  moveTo,
+  popGraphicsState,
+  pushGraphicsState,
+  rgb,
+  type PDFOperator,
+  type PDFPage,
+  type PDFFont,
+} from "pdf-lib";
 import sharp from "sharp";
 import type {
   GenerateOptions,
@@ -106,20 +120,31 @@ async function renderBadgeWithContext(
     const prepared = await preparePhoto(
       photoBytes,
       photoField.width,
-      photoField.height,
-      photoField.borderRadius ?? 6
+      photoField.height
     );
     const image =
       prepared.kind === "png"
         ? await pdfDoc.embedPng(prepared.bytes)
         : await pdfDoc.embedJpg(prepared.bytes);
 
+    const radius = photoField.borderRadius ?? 6;
+    page.pushOperators(
+      pushGraphicsState(),
+      ...roundedRectClipOperators(
+        photoField.x,
+        photoField.y,
+        photoField.width,
+        photoField.height,
+        radius
+      )
+    );
     page.drawImage(image, {
       x: photoField.x,
       y: photoField.y,
       width: photoField.width,
       height: photoField.height,
     });
+    page.pushOperators(popGraphicsState());
   }
 
   return pdfDoc.save();
@@ -133,37 +158,74 @@ const PT_PER_INCH = 72;
 /** Embedded photo resolution — ~300 DPI for the ~62×83 pt slot on print. */
 const PHOTO_PRINT_DPI = 300;
 const PHOTO_JPEG_QUALITY = 95;
+/** Cubic-bezier approximation of a quarter circle (kappa). */
+const BEZIER_KAPPA = 0.5522847498;
+
+function roundedRectClipOperators(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number
+): PDFOperator[] {
+  const r = Math.min(radius, width / 2, height / 2);
+  const k = BEZIER_KAPPA * r;
+
+  return [
+    moveTo(x + r, y),
+    lineTo(x + width - r, y),
+    appendBezierCurve(
+      x + width - r + k,
+      y,
+      x + width,
+      y + r - k,
+      x + width,
+      y + r
+    ),
+    lineTo(x + width, y + height - r),
+    appendBezierCurve(
+      x + width,
+      y + height - r + k,
+      x + width - r + k,
+      y + height,
+      x + width - r,
+      y + height
+    ),
+    lineTo(x + r, y + height),
+    appendBezierCurve(
+      x + r - k,
+      y + height,
+      x,
+      y + height - r + k,
+      x,
+      y + height - r
+    ),
+    lineTo(x, y + r),
+    appendBezierCurve(x, y + r - k, x + r - k, y, x + r, y),
+    closePath(),
+    clip(),
+    endPath(),
+  ];
+}
 
 async function preparePhoto(
   photoBytes: Buffer,
   width: number,
-  height: number,
-  borderRadius = 6
+  height: number
 ): Promise<{ bytes: Buffer; kind: "png" | "jpg" }> {
   const scale = PHOTO_PRINT_DPI / PT_PER_INCH;
   const pixelWidth = Math.round(width * scale);
   const pixelHeight = Math.round(height * scale);
-  const radius = Math.min(
-    Math.round(borderRadius * scale),
-    Math.floor(Math.min(pixelWidth, pixelHeight) / 2)
-  );
-
-  const mask = Buffer.from(
-    `<svg width="${pixelWidth}" height="${pixelHeight}">
-      <rect x="0" y="0" width="${pixelWidth}" height="${pixelHeight}" rx="${radius}" ry="${radius}" fill="#fff"/>
-    </svg>`
-  );
 
   const meta = await sharp(photoBytes).rotate().metadata();
   const hasAlpha = meta.hasAlpha === true;
 
-  let pipeline = sharp(photoBytes)
+  const pipeline = sharp(photoBytes)
     .rotate()
     .resize(pixelWidth, pixelHeight, {
       fit: "cover",
       position: "centre",
-    })
-    .composite([{ input: mask, blend: "dest-in" }]);
+    });
 
   if (hasAlpha) {
     const png = await pipeline.png({ compressionLevel: 6 }).toBuffer();
