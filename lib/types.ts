@@ -22,6 +22,20 @@ export interface PhotoFieldConfig {
   borderRadius?: number;
 }
 
+export interface QrFieldConfig {
+  x: number;
+  y: number;
+  size: number;
+  url: string;
+}
+
+export interface TimetableLabelConfig {
+  textX: number;
+  textBaselineY: number;
+  fontSize: number;
+  text: string;
+}
+
 export interface TemplateConfig {
   id: string;
   name: string;
@@ -39,6 +53,8 @@ export interface TemplateConfig {
     id_line: TextFieldConfig;
     mhd: TextFieldConfig;
     photo: PhotoFieldConfig;
+    qr: QrFieldConfig;
+    timetable: TimetableLabelConfig;
   };
 }
 

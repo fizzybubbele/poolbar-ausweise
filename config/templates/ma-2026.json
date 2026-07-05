@@ -21,6 +21,18 @@
       "height": 83.17,
       "fit": "cover",
       "borderRadius": 6
+    },
+    "qr": {
+      "x": 194.4,
+      "y": 103.51,
+      "size": 59.11,
+      "url": "https://poolbar.at/programm"
+    },
+    "timetable": {
+      "textX": 194.32,
+      "textBaselineY": 92.08,
+      "fontSize": 9,
+      "text": "timetable"
     }
   }
 }

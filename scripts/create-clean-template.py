@@ -15,6 +15,10 @@ REDACT_RECTS = [
     (194.3, 116.6, 255.0, 129.4),
 ]
 
+# QR-Code + „WICHTIGE INFOS“-Label — Hintergrundfarbe Poolbar-Grün
+QR_BLOCK_RECT = (193.0, 31.0, 255.0, 104.0)
+BADGE_GREEN = (177 / 255, 211 / 255, 86 / 255)
+
 
 def main() -> None:
     if not SRC.exists():
@@ -29,6 +33,7 @@ def main() -> None:
         new_page.show_pdf_page(page.rect, doc, i)
         for coords in REDACT_RECTS:
             new_page.add_redact_annot(fitz.Rect(*coords))
+        new_page.add_redact_annot(fitz.Rect(*QR_BLOCK_RECT), fill=BADGE_GREEN)
         new_page.apply_redactions()
 
     clean.save(OUT)

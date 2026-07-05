@@ -18,21 +18,25 @@ import sharp from "sharp";
 import type {
   GenerateOptions,
   PersonRecord,
+  QrFieldConfig,
   RgbColor,
   TemplateConfig,
   TextFieldConfig,
+  TimetableLabelConfig,
 } from "@/lib/types";
 import {
   getTemplateForRole,
   loadFontBytes,
   loadTemplatePdfBytes,
 } from "@/lib/pdf/templates";
+import { generateQrPng } from "@/lib/pdf/qr";
 import { displayRole } from "@/lib/parsers/name-role";
 import { PhotoZipStore } from "@/lib/parsers/photo-zip";
 
 type RenderContext = {
   templateDoc: PDFDocument;
   fontBytes: Buffer;
+  qrCache: Map<string, Buffer>;
 };
 
 async function createRenderContext(): Promise<RenderContext> {
@@ -41,7 +45,7 @@ async function createRenderContext(): Promise<RenderContext> {
     loadFontBytes(),
   ]);
   const templateDoc = await PDFDocument.load(templatePdfBytes);
-  return { templateDoc, fontBytes };
+  return { templateDoc, fontBytes, qrCache: new Map() };
 }
 
 function buildPhotoMap(photos: Record<string, Buffer>): Map<string, Buffer> {
@@ -114,6 +118,7 @@ async function renderBadgeWithContext(
   );
   drawFieldText(page, template.fields.id_line, idLine, font, template.fontSize);
   drawFieldText(page, template.fields.mhd, mhdText, font, template.fontSize);
+  await drawQrAndTimetable(page, pdfDoc, ctx, template, font);
 
   if (photoBytes) {
     const photoField = template.fields.photo;
@@ -239,6 +244,60 @@ async function preparePhoto(
 }
 
 const TEXT_BLACK: RgbColor = { r: 0, g: 0, b: 0 };
+/** Dark navy used for QR modules and timetable label in the template. */
+const TEXT_NAVY: RgbColor = {
+  r: 0.085267,
+  g: 0.108766,
+  b: 0.156207,
+};
+
+async function getCachedQrPng(
+  ctx: RenderContext,
+  qr: QrFieldConfig
+): Promise<Buffer> {
+  const key = `${qr.url}:${qr.size}`;
+  const cached = ctx.qrCache.get(key);
+  if (cached) return cached;
+
+  const png = await generateQrPng(qr.url, qr.size);
+  ctx.qrCache.set(key, png);
+  return png;
+}
+
+async function drawQrAndTimetable(
+  page: PDFPage,
+  pdfDoc: PDFDocument,
+  ctx: RenderContext,
+  template: TemplateConfig,
+  font: PDFFont
+) {
+  const qrField = template.fields.qr;
+  const qrPng = await getCachedQrPng(ctx, qrField);
+  const qrImage = await pdfDoc.embedPng(qrPng);
+
+  page.drawImage(qrImage, {
+    x: qrField.x,
+    y: qrField.y,
+    width: qrField.size,
+    height: qrField.size,
+  });
+
+  drawTimetableLabel(page, template.fields.timetable, font);
+}
+
+function drawTimetableLabel(
+  page: PDFPage,
+  field: TimetableLabelConfig,
+  font: PDFFont
+) {
+  page.drawText(field.text, {
+    x: field.textX,
+    y: field.textBaselineY,
+    size: field.fontSize,
+    font,
+    color: toRgb(TEXT_NAVY),
+  });
+}
 
 function formatFieldText(field: TextFieldConfig, text: string): string {
   return field.uppercase ? text.toUpperCase() : text;
