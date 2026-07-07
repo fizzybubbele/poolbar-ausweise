@@ -250,7 +250,6 @@ const TEXT_NAVY: RgbColor = {
   g: 0.108766,
   b: 0.156207,
 };
-const BADGE_GREEN = rgb(177 / 255, 211 / 255, 86 / 255);
 
 async function getCachedQrPng(
   ctx: RenderContext,
@@ -275,9 +274,6 @@ async function drawQrAndTimetable(
   const qrField = template.fields.qr;
   const labelField = template.fields.timetable;
 
-  // Cover legacy template QR / „WICHTIGE INFOS“ even if an old clean PDF is loaded.
-  drawQrBlockBackground(page, qrField, labelField);
-
   const qrPng = await getCachedQrPng(ctx, qrField);
   const qrImage = await pdfDoc.embedPng(qrPng);
 
@@ -289,25 +285,6 @@ async function drawQrAndTimetable(
   });
 
   drawTimetableLabel(page, labelField, font);
-}
-
-function drawQrBlockBackground(
-  page: PDFPage,
-  qr: QrFieldConfig,
-  label: TimetableLabelConfig
-) {
-  const pad = 1;
-  const bottomY = label.textBaselineY - label.fontSize - 2;
-  const topY = qr.y + qr.size;
-
-  page.drawRectangle({
-    x: qr.x - pad,
-    y: bottomY,
-    width: qr.size + pad * 2,
-    height: topY - bottomY + pad,
-    color: BADGE_GREEN,
-    borderWidth: 0,
-  });
 }
 
 function drawTimetableLabel(
